@@ -215,3 +215,20 @@ export async function replaceMeal(mealId: string, draft: MealDraft): Promise<voi
     [draft.dish, draft.proteinG, draft.kcal, draft.cookMin, draft.isVeg, mealId]
   );
 }
+
+/** Minimal dish info for recipe generation. */
+export async function getMealDish(
+  mealId: string
+): Promise<{ dishName: string; isVeg: boolean; cuisine: string } | null> {
+  const { rows } = await pool.query(
+    `SELECT m.dish_name, m.is_veg,
+            COALESCE(p.constraints_snapshot->>'region', 'Indian') AS region
+       FROM meals m
+       JOIN meal_plan_days d ON d.id = m.day_id
+       JOIN meal_plans p     ON p.id = d.plan_id
+      WHERE m.id = $1`,
+    [mealId]
+  );
+  if (!rows[0]) return null;
+  return { dishName: rows[0].dish_name, isVeg: rows[0].is_veg, cuisine: rows[0].region };
+}

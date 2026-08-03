@@ -19,6 +19,10 @@ export const env = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
 
+  // Optional. When set, dish/ingredient photos are pulled from Pexels;
+  // otherwise the app falls back to stylized cards + icons.
+  PEXELS_API_KEY: process.env.PEXELS_API_KEY || "",
+
   // Auth seam. Blank in production.
   DEV_USER_ID: process.env.DEV_USER_ID || "",
 };

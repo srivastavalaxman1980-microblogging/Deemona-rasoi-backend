@@ -168,3 +168,31 @@ CREATE INDEX IF NOT EXISTS idx_pantry_household ON pantry_items(household_id);
 DROP TRIGGER IF EXISTS trg_pantry_updated ON pantry_items;
 CREATE TRIGGER trg_pantry_updated BEFORE UPDATE ON pantry_items
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- image_cache : caches Pexels photo lookups for dishes and ingredients, so we
+-- query each name only once. An empty image_url means "checked, no photo" (use
+-- the stylized card fallback) -- distinct from a missing row (not yet checked).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS image_cache (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind        TEXT NOT NULL,
+  cache_key   TEXT NOT NULL,
+  image_url   TEXT NOT NULL DEFAULT '',
+  credit_name TEXT NOT NULL DEFAULT '',
+  credit_url  TEXT NOT NULL DEFAULT '',
+  checked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (kind, cache_key)
+);
+
+-- ---------------------------------------------------------------------------
+-- recipes : caches generated recipes by normalized dish name, so the same dish
+-- is generated once and reused across all households.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS recipes (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dish_key    TEXT NOT NULL UNIQUE,
+  dish_name   TEXT NOT NULL,
+  data        JSONB NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);

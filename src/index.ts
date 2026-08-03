@@ -7,6 +7,7 @@ import householdsRouter from "./routes/households";
 import mealPlansRouter from "./routes/mealPlans";
 import groceryRouter from "./routes/grocery";
 import pantryRouter from "./routes/pantry";
+import recipesRouter from "./routes/recipes";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/households", householdsRouter);
 app.use("/api", mealPlansRouter);
 app.use("/api", groceryRouter);
 app.use("/api", pantryRouter);
+app.use("/api", recipesRouter);
 
 app.use(notFound);
 app.use(errorHandler);
