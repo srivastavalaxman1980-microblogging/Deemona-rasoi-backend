@@ -14,7 +14,7 @@ function mapRow(r: any): PantryItem {
 }
 
 export interface PantryInput {
-  item: string;
+  item?: string;
   quantity?: string;
   category?: string;
   expiryDate?: string | null;
