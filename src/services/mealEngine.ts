@@ -108,7 +108,7 @@ export function constraintsToText(c: HouseholdConstraints): string {
   const parts = [
     `${c.adults} adult(s) and ${c.kids} kid(s)`,
     `${c.diet} diet`,
-    `${c.region} home cooking`,
+    `${c.region} cuisine`,
     `max ${c.maxCookMin} min per meal`,
     `goal: ${c.goal}`,
     `daily food budget approx Rs ${c.dailyBudgetInr}`,
@@ -130,10 +130,13 @@ function mapMeal(mealType: MealType, raw: any): MealDraft {
 }
 
 const WEEK_SYSTEM =
-  "You plan meals for Indian families. Return ONLY minified JSON, no prose, no markdown. " +
+  "You plan home meals for Indian households, spanning Indian regional cuisines AND international cuisines. " +
+  "Return ONLY minified JSON, no prose, no markdown. " +
   'Schema: {"w":[{"d":"Mon","b":M,"l":M,"s":M,"din":M}, ...7 days Mon..Sun]} ' +
   'where M={"n":dish name (<=4 words),"p":protein grams int,"k":kcal per person int,"t":cook mins int,"v":1 if vegetarian else 0}. ' +
-  "Rules: authentic home-style dishes for the stated region; NO dish repeats within the week (except plain rice/roti); " +
+  "Rules: authentic home-style dishes true to the stated cuisine or region (for an Indian region use its traditional dishes; " +
+  "for 'Chinese' default to Indo-Chinese as eaten in India; for other international cuisines use genuine dishes of that cuisine); " +
+  "NO dish repeats within the week (except staples like plain rice/roti); " +
   "no heavy or fried items for breakfast; balance heavy and light meals across the day; snacks are light; " +
   "respect diet strictly (Jain = no onion/garlic/root vegetables, Satvik and Vegan accordingly); " +
   "honour the family context and every listed allergen.";
