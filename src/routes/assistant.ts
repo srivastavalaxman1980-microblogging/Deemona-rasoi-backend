@@ -13,6 +13,7 @@ const schema = z.object({
     .optional(),
   householdId: z.string().uuid().optional(),
   planId: z.string().uuid().optional(),
+  language: z.string().max(40).optional(),
 });
 
 // POST /api/assistant  -> short, context-aware kitchen guidance
@@ -21,8 +22,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) throw httpError(400, "Invalid request", parsed.error.flatten());
-    const { message, history, householdId, planId } = parsed.data;
-    const reply = await askAssistant(message, history || [], householdId, planId);
+    const { message, history, householdId, planId, language } = parsed.data;
+    const reply = await askAssistant(message, history || [], householdId, planId, language || "English");
     res.json({ reply });
   })
 );

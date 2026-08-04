@@ -82,10 +82,14 @@ export async function askAssistant(
   message: string,
   history: ChatMsg[],
   householdId?: string,
-  planId?: string
+  planId?: string,
+  language = "English"
 ): Promise<string> {
   const context = await buildContext(householdId, planId);
-  const system = context ? `${SYSTEM_BASE}\n\nHousehold context:\n${context}` : SYSTEM_BASE;
+  let system = context ? `${SYSTEM_BASE}\n\nHousehold context:\n${context}` : SYSTEM_BASE;
+  if (language && language.toLowerCase() !== "english") {
+    system += `\n\nReply ONLY in ${language}, in a natural conversational tone.`;
+  }
 
   const clean = (history || []).filter(
     (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"

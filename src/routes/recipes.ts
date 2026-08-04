@@ -12,7 +12,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const meal = await getMealDish(req.params.mealId);
     if (!meal) throw httpError(404, "Meal not found");
-    const recipe = await getRecipeForDish(meal.dishName, meal.isVeg, meal.cuisine);
+    const language = String(req.query.lang || "English").slice(0, 40) || "English";
+    const recipe = await getRecipeForDish(meal.dishName, meal.isVeg, meal.cuisine, language);
     res.json(recipe);
   })
 );

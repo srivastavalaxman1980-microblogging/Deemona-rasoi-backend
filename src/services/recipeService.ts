@@ -41,13 +41,24 @@ async function callClaude(system: string, user: string, maxTokens = 1600): Promi
   return extractJSON(text);
 }
 
-const RECIPE_SYSTEM =
+const RECIPE_SYSTEM_BASE =
   "You are a home-cooking assistant for Indian households, covering Indian and international cuisines. " +
   "Return ONLY minified JSON, no markdown. " +
   'Schema: {"desc":short description (1-2 sentences),"serv":servings int,' +
-  '"ing":[{"n":ingredient name (2-3 words, generic, no brand),"q":quantity with unit}],' +
+  '"ing":[{"n":ingredient name (2-3 words, generic, no brand),"en":the same ingredient name in English,"q":quantity with unit}],' +
   '"steps":[clear ordered step strings],"tips":[optional short tips]}. ' +
   "Write a genuine home-style recipe a beginner can follow, 6 to 12 concise steps, using common kitchen measures.";
+
+function recipeSystem(language: string): string {
+  if (language && language.toLowerCase() !== "english") {
+    return (
+      RECIPE_SYSTEM_BASE +
+      ` Write "desc", each ingredient "n", all "steps", and "tips" in ${language}. ` +
+      `Keep each ingredient's "en" field in plain English (used only for image lookup).`
+    );
+  }
+  return RECIPE_SYSTEM_BASE + ' Set each ingredient "en" equal to "n".';
+}
 
 export interface RecipeIngredient {
   name: string;
@@ -70,9 +81,11 @@ export interface RecipeData {
 export async function getRecipeForDish(
   dishName: string,
   isVeg: boolean,
-  cuisine: string
+  cuisine: string,
+  language = "English"
 ): Promise<RecipeData> {
-  const key = normalizeItem(dishName) || dishName.toLowerCase().trim();
+  const baseKey = normalizeItem(dishName) || dishName.toLowerCase().trim();
+  const key = `${baseKey}::${language.toLowerCase()}`;
 
   const cached = await getRecipeCache(key);
   if (cached) return cached as RecipeData;
@@ -80,7 +93,7 @@ export async function getRecipeForDish(
   const user =
     `Recipe for the dish "${dishName}". It is ${isVeg ? "vegetarian" : "non-vegetarian"}. ` +
     `Cuisine style: ${cuisine}. Minified JSON only.`;
-  const gen = await callClaude(RECIPE_SYSTEM, user, 1600);
+  const gen = await callClaude(recipeSystem(language), user, 1600);
 
   const rawIngredients: any[] = Array.isArray(gen.ing) ? gen.ing : [];
 
@@ -90,7 +103,8 @@ export async function getRecipeForDish(
       rawIngredients.map(async (ing) => {
         const name = String(ing?.n || "").trim();
         if (!name) return null;
-        const img = await resolveImage("ingredient", name);
+        const englishName = String(ing?.en || ing?.n || "").trim() || name;
+        const img = await resolveImage("ingredient", englishName);
         return { name, quantity: String(ing?.q || "").trim(), image: img?.url || null };
       })
     ).then((list) => list.filter((x): x is RecipeIngredient => x !== null)),
