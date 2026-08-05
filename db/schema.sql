@@ -8,16 +8,26 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ---------------------------------------------------------------------------
--- users : account records for login. households.user_id references these ids
--- (kept as a plain UUID column, not an FK, so legacy dev rows don't break).
+-- users : account records for login (email/password and/or Google OAuth).
+-- password_hash is NULL for Google-only accounts. google_sub links a Google
+-- identity. households.user_id references these ids (plain UUID, not an FK).
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
   name          TEXT NOT NULL DEFAULT '',
+  google_sub    TEXT,
+  avatar_url    TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Idempotent upgrades for databases created before OAuth support was added.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_google_sub
+  ON users(google_sub) WHERE google_sub IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- updated_at trigger helper

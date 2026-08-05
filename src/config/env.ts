@@ -29,6 +29,9 @@ export const env = {
   // Secret for signing login tokens. MUST be set to a strong random value in
   // production (Render env). The default is for local dev only.
   JWT_SECRET: process.env.JWT_SECRET || "dev-insecure-jwt-secret-change-me",
+
+  // Google OAuth client id (public). Enables "Continue with Google".
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
 };
 
 if (env.JWT_SECRET === "dev-insecure-jwt-secret-change-me") {

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { asyncHandler, auth, httpError, userId } from "../middleware";
-import { login, me, register } from "../services/authService";
+import { login, loginWithGoogle, me, register } from "../services/authService";
 
 const router = Router();
 
@@ -29,6 +29,17 @@ router.post(
     const parsed = credentials.safeParse(req.body);
     if (!parsed.success) throw httpError(400, "Invalid details", parsed.error.flatten());
     const result = await login(parsed.data.email, parsed.data.password);
+    res.json(result);
+  })
+);
+
+// POST /api/auth/google  (public) -- verifies a Google ID token
+router.post(
+  "/google",
+  asyncHandler(async (req, res) => {
+    const idToken = String(req.body?.idToken || "");
+    if (!idToken) throw httpError(400, "Missing Google token");
+    const result = await loginWithGoogle(idToken);
     res.json(result);
   })
 );
