@@ -60,6 +60,14 @@ export async function getHousehold(id: string): Promise<Household | null> {
   return rows[0] ? mapRow(rows[0]) : null;
 }
 
+export async function listHouseholds(userId: string): Promise<Household[]> {
+  const { rows } = await pool.query(
+    `SELECT * FROM households WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return rows.map(mapRow);
+}
+
 export async function updateHousehold(
   id: string,
   patch: HouseholdInput

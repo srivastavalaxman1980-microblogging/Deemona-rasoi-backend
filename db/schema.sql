@@ -8,6 +8,18 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ---------------------------------------------------------------------------
+-- users : account records for login. households.user_id references these ids
+-- (kept as a plain UUID column, not an FK, so legacy dev rows don't break).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS users (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  name          TEXT NOT NULL DEFAULT '',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------------
 -- updated_at trigger helper
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()

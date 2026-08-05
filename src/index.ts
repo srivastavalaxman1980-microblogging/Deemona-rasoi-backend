@@ -9,6 +9,7 @@ import groceryRouter from "./routes/grocery";
 import pantryRouter from "./routes/pantry";
 import recipesRouter from "./routes/recipes";
 import assistantRouter from "./routes/assistant";
+import authRouter from "./routes/auth";
 
 const app = express();
 
@@ -24,6 +25,9 @@ app.get("/health", async (_req, res) => {
     res.status(503).json({ status: "degraded", db: "down", error: err.message });
   }
 });
+
+// Public auth routes (register/login). /me self-guards with the auth middleware.
+app.use("/api/auth", authRouter);
 
 // Everything below requires an identity (see middleware/auth for the seam).
 app.use("/api", auth);

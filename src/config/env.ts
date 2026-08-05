@@ -25,4 +25,12 @@ export const env = {
 
   // Auth seam. Blank in production.
   DEV_USER_ID: process.env.DEV_USER_ID || "",
+
+  // Secret for signing login tokens. MUST be set to a strong random value in
+  // production (Render env). The default is for local dev only.
+  JWT_SECRET: process.env.JWT_SECRET || "dev-insecure-jwt-secret-change-me",
 };
+
+if (env.JWT_SECRET === "dev-insecure-jwt-secret-change-me") {
+  console.warn("[rasoi] WARNING: JWT_SECRET is using the insecure default. Set a strong JWT_SECRET in production.");
+}

@@ -4,6 +4,7 @@ import { asyncHandler, httpError, userId } from "../middleware";
 import {
   createHousehold,
   getHousehold,
+  listHouseholds,
   updateHousehold,
 } from "../repositories/households";
 
@@ -38,6 +39,14 @@ function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   return result.data;
 }
 
+// GET /api/households  -> households belonging to the signed-in user
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    res.json(await listHouseholds(userId(req)));
+  })
+);
+
 // POST /api/households
 router.post(
   "/",
@@ -54,6 +63,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const household = await getHousehold(req.params.id);
     if (!household) throw httpError(404, "Household not found");
+    if (household.userId && household.userId !== userId(req))
+      throw httpError(404, "Household not found");
     res.json(household);
   })
 );
@@ -62,9 +73,12 @@ router.get(
 router.patch(
   "/:id",
   asyncHandler(async (req, res) => {
+    const existing = await getHousehold(req.params.id);
+    if (!existing) throw httpError(404, "Household not found");
+    if (existing.userId && existing.userId !== userId(req))
+      throw httpError(404, "Household not found");
     const input = parse(householdSchema, req.body);
     const household = await updateHousehold(req.params.id, input);
-    if (!household) throw httpError(404, "Household not found");
     res.json(household);
   })
 );
