@@ -20,7 +20,15 @@ const generateSchema = z.object({
   span: z.enum(["week", "month"]).default("week"),
   occasion: z.string().max(60).default("Regular week"),
   title: z.string().max(120).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
+
+function todayYMD(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 // POST /api/households/:householdId/meal-plans  -> generate + persist a plan
 router.post(
@@ -29,6 +37,7 @@ router.post(
     const parsed = generateSchema.safeParse(req.body ?? {});
     if (!parsed.success) throw httpError(400, "Invalid request body", parsed.error.flatten());
     const { span, occasion } = parsed.data;
+    const weekStart = parsed.data.startDate || todayYMD();
 
     const household = await getHousehold(req.params.householdId);
     if (!household) throw httpError(404, "Household not found");
@@ -56,6 +65,7 @@ router.post(
         occasion,
         proteinTargetG: proteinTarget(household),
         constraints,
+        weekStart,
       },
       days
     );

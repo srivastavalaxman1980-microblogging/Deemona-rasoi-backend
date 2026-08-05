@@ -13,6 +13,7 @@ export interface SavePlanMeta {
   occasion: string;
   proteinTargetG: number;
   constraints: HouseholdConstraints;
+  weekStart: string; // YYYY-MM-DD
 }
 
 export interface PlanSummary {
@@ -29,6 +30,7 @@ export interface PlanSummary {
 
 export interface FullPlan extends PlanSummary {
   constraints: HouseholdConstraints;
+  weekStart: string | null;
   days: {
     id: string;
     dayIndex: number;
@@ -46,8 +48,8 @@ export async function savePlan(
   return withTransaction(async (client) => {
     const plan = await client.query(
       `INSERT INTO meal_plans
-         (household_id, title, span, occasion, num_days, protein_target_g, constraints_snapshot)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+         (household_id, title, span, occasion, num_days, protein_target_g, constraints_snapshot, week_start)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING id`,
       [
         householdId,
@@ -57,6 +59,7 @@ export async function savePlan(
         days.length,
         meta.proteinTargetG,
         JSON.stringify(meta.constraints),
+        meta.weekStart,
       ]
     );
     const planId: string = plan.rows[0].id;
@@ -104,7 +107,11 @@ export async function listPlans(householdId: string): Promise<PlanSummary[]> {
 }
 
 export async function getFullPlan(planId: string): Promise<FullPlan | null> {
-  const planRes = await pool.query(`SELECT * FROM meal_plans WHERE id = $1`, [planId]);
+  const planRes = await pool.query(
+    `SELECT *, to_char(week_start, 'YYYY-MM-DD') AS week_start_ymd
+       FROM meal_plans WHERE id = $1`,
+    [planId]
+  );
   if (!planRes.rows[0]) return null;
   const p = planRes.rows[0];
 
@@ -150,6 +157,7 @@ export async function getFullPlan(planId: string): Promise<FullPlan | null> {
     status: p.status,
     createdAt: p.created_at,
     constraints: p.constraints_snapshot,
+    weekStart: p.week_start_ymd || null,
     days: daysRes.rows.map((d) => ({
       id: d.id,
       dayIndex: d.day_index,
