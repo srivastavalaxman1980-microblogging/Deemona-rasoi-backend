@@ -58,7 +58,7 @@ export function errorHandler(
   const status = err?.status || 500;
   const message = err?.message || "Internal server error";
   if (status >= 500) console.error("[error]", err);
-  res.status(status).json({ error: message, details: err?.details });
+  res.status(status).json({ error: message, code: err?.code, details: err?.details });
 }
 
 /** Small helper to throw HTTP errors from anywhere in a handler. */

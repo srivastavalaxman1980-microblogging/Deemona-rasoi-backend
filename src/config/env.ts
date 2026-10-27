@@ -32,7 +32,25 @@ export const env = {
 
   // Google OAuth client id (public). Enables "Continue with Google".
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+
+  // Public URL of the frontend; used to build links in emails.
+  FRONTEND_URL: (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, ""),
+
+  // Outbound email (SMTP). Leave SMTP_HOST blank to disable email; links are
+  // then printed to the server log and verification is NOT enforced.
+  SMTP_HOST: process.env.SMTP_HOST || "",
+  SMTP_PORT: Number(process.env.SMTP_PORT || 587),
+  SMTP_SECURE: process.env.SMTP_SECURE === "true", // true for port 465
+  SMTP_USER: process.env.SMTP_USER || "",
+  SMTP_PASS: process.env.SMTP_PASS || "",
+  MAIL_FROM: process.env.MAIL_FROM || "Deemona Rasoi <no-reply@localhost>",
+
+  // "false" turns off the verified-email requirement even when SMTP is set.
+  REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION !== "false",
 };
+
+export const mailEnabled = !!env.SMTP_HOST;
+export const verificationEnforced = mailEnabled && env.REQUIRE_EMAIL_VERIFICATION;
 
 if (env.JWT_SECRET === "dev-insecure-jwt-secret-change-me") {
   console.warn("[rasoi] WARNING: JWT_SECRET is using the insecure default. Set a strong JWT_SECRET in production.");

@@ -7,6 +7,9 @@ export interface User {
   name: string;
   google_sub: string | null;
   avatar_url: string | null;
+  email_verified: boolean;
+  failed_logins: number;
+  locked_until: string | null;
   created_at: string;
 }
 
@@ -44,7 +47,7 @@ export async function createGoogleUser(
   avatar: string
 ): Promise<User> {
   const { rows } = await pool.query(
-    `INSERT INTO users (email, name, google_sub, avatar_url) VALUES ($1,$2,$3,$4) RETURNING *`,
+    `INSERT INTO users (email, name, google_sub, avatar_url, email_verified) VALUES ($1,$2,$3,$4,true) RETURNING *`,
     [email, name, googleSub, avatar]
   );
   return rows[0];
@@ -58,9 +61,38 @@ export async function linkGoogle(
   const { rows } = await pool.query(
     `UPDATE users
         SET google_sub = $2,
-            avatar_url = COALESCE(NULLIF($3, ''), avatar_url)
+            avatar_url = COALESCE(NULLIF($3, ''), avatar_url),
+            email_verified = true
       WHERE id = $1 RETURNING *`,
     [userId, googleSub, avatar]
   );
   return rows[0] || null;
+}
+
+export async function markVerified(userId: string): Promise<void> {
+  await pool.query(`UPDATE users SET email_verified = true WHERE id = $1`, [userId]);
+}
+
+export async function setPassword(userId: string, hash: string): Promise<void> {
+  await pool.query(
+    `UPDATE users SET password_hash = $2, email_verified = true,
+            failed_logins = 0, locked_until = NULL WHERE id = $1`,
+    [userId, hash]
+  );
+}
+
+/** Records a failed password attempt; locks the account after `max` failures. */
+export async function recordFailedLogin(userId: string, max: number, lockMinutes: number): Promise<void> {
+  await pool.query(
+    `UPDATE users
+        SET failed_logins = CASE WHEN failed_logins + 1 >= $2 THEN 0 ELSE failed_logins + 1 END,
+            locked_until  = CASE WHEN failed_logins + 1 >= $2
+                                 THEN now() + ($3 || ' minutes')::interval ELSE locked_until END
+      WHERE id = $1`,
+    [userId, max, String(lockMinutes)]
+  );
+}
+
+export async function clearFailedLogins(userId: string): Promise<void> {
+  await pool.query(`UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1`, [userId]);
 }

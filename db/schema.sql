@@ -29,6 +29,26 @@ ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_google_sub
   ON users(google_sub) WHERE google_sub IS NOT NULL;
 
+-- Email verification + login lockout. Existing accounts are grandfathered as
+-- verified (column added with DEFAULT true), then the default flips to false
+-- so every NEW signup must verify. Safe to re-run.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ALTER COLUMN email_verified SET DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_logins INT NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+
+-- One-time tokens for email verification and password reset (hashed at rest).
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL CHECK (kind IN ('verify','reset')),
+  token_hash  TEXT NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id, kind);
+
 -- ---------------------------------------------------------------------------
 -- updated_at trigger helper
 -- ---------------------------------------------------------------------------

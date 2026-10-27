@@ -10,8 +10,12 @@ import pantryRouter from "./routes/pantry";
 import recipesRouter from "./routes/recipes";
 import assistantRouter from "./routes/assistant";
 import authRouter from "./routes/auth";
+import { authGeneralLimiter } from "./middleware/rateLimit";
 
 const app = express();
+
+// Behind Render/MilesWeb proxies: use the real client IP for rate limiting.
+app.set("trust proxy", 1);
 
 app.use(cors({ origin: env.CORS_ORIGIN }));
 app.use(express.json({ limit: "1mb" }));
@@ -27,7 +31,7 @@ app.get("/health", async (_req, res) => {
 });
 
 // Public auth routes (register/login). /me self-guards with the auth middleware.
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authGeneralLimiter, authRouter);
 
 // Everything below requires an identity (see middleware/auth for the seam).
 app.use("/api", auth);
